@@ -62,7 +62,7 @@
 
 (defmacro match-if [pat seq then &optional [else ()]]
   `(let [[vars {}]]
-     (if (match? '~pat ~seq vars)
+     (if (match? ~pat ~seq vars)
        (let ~(mapcar (lambda (v) [v `(get vars '~v)]) (vars-in pat)) ~then)
        (~@else))))
 
