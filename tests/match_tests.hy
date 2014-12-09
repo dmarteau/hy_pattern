@@ -50,3 +50,28 @@
                  (assert (and (= ?a ()) (= ?b 1)))
                  (assert False)))
 
+
+
+(defn test-match-cond1 []
+      "Test match-cond 1"
+      (match-cond ['bar 0] 
+                  [[?a 0] (assert (= ?a 'bar))] 
+                  [[?a 1] (assert False)] 
+                  [?_ (assert False)]))
+
+      
+(defn test-match-cond2 []
+      "Test match-cond 2"
+      (match-cond ['bar 1] 
+                  [[?a 0] (assert False)] 
+                  [[?a 1] (assert (= ?a 'bar))] 
+                  [?_ (assert False)]))
+
+
+(defn test-match-cond-catch-all []
+      "Test match-cond catch all"
+      (match-cond ['bar "foo"] 
+                  [[?a 0] (assert False)] 
+                  [[?a 1] (assert False)] 
+                  [?_ (assert True)]))
+

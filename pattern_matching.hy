@@ -84,6 +84,35 @@
   `(let [[vars {}]] ~if-expr))
 
 
+(defmacro match-cond [expr &rest branches]
+  "cond with pattern matching
+         (match-cond expr 
+               [pat1 branch1]
+               [pat2 branch2]
+               ...
+               [?_ all-match-branch])
+   Equivalent to: 
+         (match-if pat1 expr 
+             branch1 
+             (match-if pat2 expr 
+                 branch2
+                 ...
+                 (match-if ?_ all-match-branch)...))"
+  (setv branches (iter branches))
+  (defun make-branch [branch]
+    (setv (, pat thebranch) branch)
+    `(match-if ~pat expr ~thebranch))
+
+     (setv root (make-branch (next branches)))
+     (setv last-branch root)
+     (for* [branch branches]
+       (setv cur-branch (make-branch branch))
+       (.append last-branch cur-branch)
+       (setv last-branch cur-branch))
+
+     `(let [[expr ~expr]] ~root))
+
+
 (defmacro import-pattern-fns []
   `(import [pattern_matching [*]]))
 
