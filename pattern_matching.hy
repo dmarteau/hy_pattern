@@ -60,11 +60,14 @@
            (vars-in (cdr expr)))))
 
 
-(defmacro match-if [pat seq then &optional [else ()]]
-  `(let [[vars {}]]
-     (if (match? ~pat ~seq vars)
-       (let ~(mapcar (lambda (v) [v `(get vars '~v)]) (vars-in pat)) ~then)
-       (~@else))))
+(defmacro match-if [pat seq then &optional [else nil]]
+   (setv if-expr `(if (match? '~pat ~seq vars)
+       (let ~(mapcar (lambda (v) [v `(get vars '~v)]) (vars-in pat)) ~then)))
+   (if (!= else nil) 
+       (.append if-expr else)) 
+  `(let [[vars {}]] ~if-expr))
 
 
+(defmacro import-pattern-fns []
+  `(import [pattern_matching [*]]))
 

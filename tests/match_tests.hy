@@ -4,38 +4,42 @@
 
 (defn test-flat-pattern-match []
       "Test flat pattern match"
-      (match-if ['?a '?b 1 "foo"] ["v1" "v2" 1 "foo"] 
+      (match-if [?a ?b 1 "foo"] ["v1" "v2" 1 "foo"] 
                 (assert (and (= ?a "v1") (= ?b "v2"))) 
                 (assert False)))
 
+
 (defn test-flat-pattern-match []
        "Test flat pattern unmatch"
-       (match-if ['?a '?b 1 "foo"] ["v1" "v2" 1 "bar"]
+       (match-if [?a ?b 1 "foo"] ["v1" "v2" 1 "bar"]
                  (assert False)
                  (assert True)))
+
 
 (defn test-flat-pattern-match2 []
        "Test flat pattern match with same binding"
-       (match-if ['?a '?b 1 '?b] ["v1" "v2" 1 "v2"]
+       (match-if [?a ?b 1 ?b] ["v1" "v2" 1 "v2"]
                  (assert (and (= ?a "v1") (= ?b "v2")))
                  (assert False)))
 
+
 (defn test-flat-pattern-unmatch2 []
        "Test flat pattern unmatch with same binding"
-       (match-if ['?a '?b 1 '?b] ["v1" "v2" 1 "bar"]
+       (match-if [?a ?b 1 ?b] ["v1" "v2" 1 "bar"]
                  (assert False)
                  (assert True)))
 
+
 (defn test-nested-pattern-match []
        "Test nested pattern match"
-       (match-if [['?a '?b] 1 2] [["foo" "bar"] 1 2]
+       (match-if [[?a ?b] 1 2] [["foo" "bar"] 1 2]
                  (assert (and (= ?a "foo") (= ?b "bar")))
                  (assert False)))
 
 
 (defn test-nested-pattern-match2 []
        "Test double nested pattern match"
-       (match-if [['?a ['?b '?c]] 1 '?c] [["foo" ["bar" 42]] 1 42]
+       (match-if [[?a [?b ?c]] 1 ?c] [["foo" ["bar" 42]] 1 42]
                   (assert (and (= ?a "foo") (= ?b "bar") (= ?c 42)))
                   (assert False)))
 
