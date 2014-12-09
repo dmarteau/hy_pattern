@@ -43,3 +43,10 @@
                   (assert (and (= ?a "foo") (= ?b "bar") (= ?c 42)))
                   (assert False)))
 
+(defn test-expand-pattern-match []
+       "Test expand pattern match"
+       (setv bar "foo")
+       (match-if [?a ?b bar (+ 2 7)] [() 1 'foo 9]
+                 (assert (and (= ?a ()) (= ?b 1)))
+                 (assert False)))
+
