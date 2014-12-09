@@ -70,21 +70,28 @@
   `(let ~(mapcar (lambda (v) [v `'~v]) (vars-in expr)) ~expr))
          
 
-(defmacro match-if [pat seq then &optional [else nil]]
+(defmacro match-if* [pat seq then &optional [else nil]]
   "Compare pat and seq and perform destructured assignement with
    variables begining with ? in pat::
 
            (match-if [[?a ?b] 1 2] [['foo 'bar] 1 2]
                   (assert (and (= ?a 'foo) (= ?b 'bar)))
-                  (assert False)))"  
+                  (assert False)))" 
   (setv if-expr `(if (match? (quote-vars ~pat) ~seq vars)
       (let ~(mapcar (lambda (v) [v `(get vars '~v)]) (vars-in pat)) ~then)))
   (if (!= else nil) 
-      (.append if-expr else)) 
+      (.append if-expr else))
+
   `(let [[vars {}]] ~if-expr))
 
 
-(defmacro match-cond [expr &rest branches]
+(defmacro match-if [&rest args]
+  `(do 
+     (import [pattern_matching [match?]])
+     (match-if* ~@args)))
+
+
+(defmacro match-cond* [expr &rest branches]
   "cond with pattern matching
          (match-cond expr 
                [pat1 branch1]
@@ -101,18 +108,20 @@
   (setv branches (iter branches))
   (defun make-branch [branch]
     (setv (, pat thebranch) branch)
-    `(match-if ~pat expr ~thebranch))
+    `(match-if* ~pat expr ~thebranch))
 
-     (setv root (make-branch (next branches)))
-     (setv last-branch root)
-     (for* [branch branches]
-       (setv cur-branch (make-branch branch))
-       (.append last-branch cur-branch)
-       (setv last-branch cur-branch))
+  (setv root (make-branch (next branches)))
+  (setv last-branch root)
+  (for* [branch branches]
+    (setv cur-branch (make-branch branch))
+    (.append last-branch cur-branch)
+    (setv last-branch cur-branch))
+ 
+  `(let [[expr ~expr]] ~root))
 
-     `(let [[expr ~expr]] ~root))
 
-
-(defmacro import-pattern-fns []
-  `(import [pattern_matching [*]]))
+(defmacro match-cond [&rest args]
+  `(do 
+     (import [pattern_matching [match?]])
+     (match-cond* ~@args)))
 
