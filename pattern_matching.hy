@@ -70,19 +70,19 @@
   `(let ~(mapcar (lambda (v) [v `'~v]) (vars-in expr)) ~expr))
          
 
-(defmacro match-if* [pat seq then &optional [else nil]]
+(defmacro/g! match-if* [pat seq then &optional [else nil]]
   "Compare pat and seq and perform destructured assignement with
    variables begining with ? in pat::
 
            (match-if [[?a ?b] 1 2] [['foo 'bar] 1 2]
                   (assert (and (= ?a 'foo) (= ?b 'bar)))
                   (assert False)))" 
-  (setv if-expr `(if (match? (quote-vars ~pat) ~seq vars)
-      (let ~(mapcar (lambda (v) [v `(get vars '~v)]) (vars-in pat)) ~then)))
+  (setv if-expr `(if (match? (quote-vars ~pat) ~seq ~g!vars)
+      (let ~(mapcar (lambda (v) [v `(get ~g!vars '~v)]) (vars-in pat)) ~then)))
   (if (!= else nil) 
       (.append if-expr else))
 
-  `(let [[vars {}]] ~if-expr))
+  `(let [[~g!vars {}]] ~if-expr))
 
 
 (defmacro match-if [&rest args]
