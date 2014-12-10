@@ -87,7 +87,7 @@
 
 (defmacro match-if [&rest args]
   `(do 
-     (import [pattern_matching [match?]])
+     (import [patterns [match?]])
      (match-if* ~@args)))
 
 
@@ -122,6 +122,6 @@
 
 (defmacro match-cond [&rest args]
   `(do 
-     (import [pattern_matching [match?]])
+     (import [patterns [match?]])
      (match-cond* ~@args)))
 

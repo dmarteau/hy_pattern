@@ -1,4 +1,4 @@
-(require pattern_matching)
+(require patterns)
 
 
 (defn test-flat-pattern-match []
