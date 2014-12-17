@@ -1,6 +1,33 @@
+;;; Pattern matching syntax 
+;;
+;; Copyright (c) 2014  David Marteau <dhmarteau@gmail.com>
+;;
+;; Permission is hereby granted, free of charge, to any person obtaining a
+;; copy of this software and associated documentation files (the "Software"),
+;; to deal in the Software without restriction, including without limitation
+;; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;; and/or sell copies of the Software, and to permit persons to whom the
+;; Software is furnished to do so, subject to the following conditions:
+;;
+;; The above copyright notice and this permission notice shall be included in
+;; all copies or substantial portions of the Software.
+;;
+;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+;; THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;; DEALINGS IN THE SOFTWARE.
+;;
+;; These macro allows writing destructured pattern matching with variable binding 
+;;
+;; ex:
+;;  (if-match [?a ?b 1 "foo"] ["v1" "v2" 1 "bar"]
+;;            true-branch ; variables ?a and ?b are binded to their counterpart values in rhs
+;;            false-branch)
 
 ;; Convert the argument list to a cons list
-;; XXX does not work with 'apply'
 (defmacro listq [&rest seq] `(list* ~@seq '()))
 
 
@@ -70,7 +97,7 @@
   `(let ~(mapcar (lambda (v) [v `'~v]) (vars-in expr)) ~expr))
          
 
-(defmacro/g! match-if* [pat seq then &optional [else nil]]
+(defmacro/g! if-match* [pat seq then &optional [else nil]]
   "Compare pat and seq and perform destructured assignement with
    variables begining with ? in pat::
 
@@ -85,10 +112,10 @@
   `(let [[~g!vars {}]] ~if-expr))
 
 
-(defmacro match-if [&rest args]
+(defmacro if-match [&rest args]
   `(do 
      (import [patterns [match?]])
-     (match-if* ~@args)))
+     (if-match* ~@args)))
 
 
 (defmacro match-cond* [expr &rest branches]
@@ -99,16 +126,16 @@
                ...
                [?_ all-match-branch])
    Equivalent to: 
-         (match-if pat1 expr 
+         (if-match pat1 expr 
              branch1 
-             (match-if pat2 expr 
+             (if-match pat2 expr 
                  branch2
                  ...
-                 (match-if ?_ all-match-branch)...))"
+                 (if-match ?_ all-match-branch)...))"
   (setv branches (iter branches))
   (defun make-branch [branch]
     (setv (, pat thebranch) branch)
-    `(match-if* ~pat expr ~thebranch))
+    `(if-match* ~pat expr ~thebranch))
 
   (setv root (make-branch (next branches)))
   (setv last-branch root)
