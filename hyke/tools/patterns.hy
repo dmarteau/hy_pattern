@@ -92,18 +92,17 @@
 
 
 (defmacro quote-vars [expr]
-  "Eval expr by substituing variables by their quoted value
+  "Eval expr by binding variable with their quoted value
    It has the side effect of evaluating all other forms"
   `(let ~(mapcar (lambda (v) [v `'~v]) (vars-in expr)) ~expr))
          
 
 (defmacro/g! if-match* [pat seq then &optional [else nil]]
   "Compare pat and seq and perform destructured assignement with
-   variables begining with ? in pat::
-
-           (match-if [[?a ?b] 1 2] [['foo 'bar] 1 2]
-                  (assert (and (= ?a 'foo) (= ?b 'bar)))
-                  (assert False)))" 
+   variables begining with ? in pat."
+   ;;        (if-match [[?a ?b] 1 2] [['foo 'bar] 1 2]
+   ;;              (assert (and (= ?a 'foo) (= ?b 'bar)))
+   ;;              (assert False)))
   (setv if-expr `(if (match? (quote-vars ~pat) ~seq ~g!vars)
       (let ~(mapcar (lambda (v) [v `(get ~g!vars '~v)]) (vars-in pat)) ~then)))
   (if (!= else nil) 
@@ -114,7 +113,7 @@
 
 (defmacro if-match [&rest args]
   `(do 
-     (import [patterns [match?]])
+     (import [hyke.tools.patterns [match?]])
      (if-match* ~@args)))
 
 
@@ -149,6 +148,6 @@
 
 (defmacro match-cond [&rest args]
   `(do 
-     (import [patterns [match?]])
+     (import [hyke.tools.patterns [match?]])
      (match-cond* ~@args)))
 

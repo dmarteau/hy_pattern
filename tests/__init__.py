@@ -1,3 +1,3 @@
 import hy
-from .match_tests import *
+from .pattern_tests import *
 

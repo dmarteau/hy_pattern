@@ -24,7 +24,7 @@
 ;; The reader macro #\n allows accessing captured groups in
 ;; the context of the test.
 ;; ex:
-;;  (re-search r"^(\d+)" "1234 foo"
+;;  (if-re-search r"^(\d+)" "1234 foo"
 ;;            (print #\1 "matched")
 ;;            (print "no match")
 
@@ -40,7 +40,7 @@
 ;;(defreader s [expr] `(re.compile ~expr))
 
 
-(defmacro re-search* [rexpr test then-branch &optional (else-branch nil)] 
+(defmacro if-re-search* [rexpr test then-branch &optional (else-branch nil)] 
   """Test the regular expression and execute the branch according to the 
      result of the test:
          (re-search r'^([/d]+)' '1234'
@@ -57,11 +57,11 @@
      `(let [[__sre_match__ (.search ~rexpr ~test)]] ~if-expr)))           
 
 
-(defmacro re-search [&rest args]
+(defmacro if-re-search [&rest args]
   ; Version of the macro that import required modules
   `(do
      (import re)
-     (re-search* ~@args)))
+     (if-re-search* ~@args)))
 
 
 (defmacro re-cond* [test &rest branches]
@@ -81,7 +81,7 @@
   (setv branches (iter branches))
   (defun make-branch [branch]
     (setv (, pat thebranch) branch)
-    `(re-search* .search ~pat _expr ~thebranch))
+    `(if-re-search* .search ~pat _expr ~thebranch))
 
     (setv root (make-branch (next branches)))
     (setv last-branch root)

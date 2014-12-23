@@ -1,4 +1,4 @@
-(require patterns)
+(require hyke.tools.patterns)
 
 
 (defn test-flat-pattern-match []
