@@ -56,9 +56,14 @@
   (set-comp x [x (apply chain args)]))  
 
 
-(defun var? (x)
+(defun var? [x]
   "Check for variable symbol if it begin with ?"
   (and (symbol? x) (= (get (name x) 0) "?")))
+
+
+(defun keyword? [x]
+  "Check symbol is keyword"
+  (and (symbol? x) (= (get (name x) 0) "&")))
 
 
 (defun match? [expr val &optional [vars {}]]
@@ -72,29 +77,31 @@
               (= (get vars expr) val)
               (do 
                 (assoc vars expr val)
-                True))
+                true))
           (= expr val)) ;; Compare actual values
       ;; Not an atom, go recursively 
-      (if (or (atom? val) (!= (len expr) (len val)))
-          False
-          (all (zipwith (fn [p v] (match? p v vars)) expr val))))) 
-          ;;(and (match? (car expr) (car val) vars)
-          ;;     (match? (cdr expr) (cdr val) vars))))))
+      (let [[elem (car expr)]]
+        (if (and (symbol? elem) (= elem '&rest))
+            (match? (car (cdr expr)) val vars)
+            (and (match? (car expr) (car val) vars)
+                 (match? (cdr expr) (cdr val) vars))))))
 
 
-(defun vars-in [expr]
+(defun vars-in [expr &optional [varform? var?]]
   "Returns all the pattern variables in an expression
    It calls var? to test if something is a variable."
   (if (atom? expr)
-    (if (var? expr) [expr] [])
-    (union (vars-in (car expr))
-           (vars-in (cdr expr)))))
+    (if (varform? expr) [expr] [])
+    (union (vars-in (car expr) varform?)
+           (vars-in (cdr expr) varform?))))
+
 
 
 (defmacro quote-vars [expr]
   "Eval expr by binding variable with their quoted value
    It has the side effect of evaluating all other forms"
-  `(let ~(mapcar (lambda (v) [v `'~v]) (vars-in expr)) ~expr))
+  `(let ~(mapcar (lambda [v] [v `'~v]) (vars-in expr 
+       (lambda [x] (or (var? x) (keyword? x))))) ~expr))
          
 
 (defmacro/g! if-match* [pat seq then &optional [else nil]]

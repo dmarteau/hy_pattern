@@ -74,3 +74,12 @@
                   [[?a 1] (assert False)] 
                   [?_ (assert True)]))
 
+
+(defn test-match-rest []
+      "Test &rest capture"
+      (if-match [?a &rest ?others] ["foo" 1 "bar" 2] 
+                (assert (= ?others [1 "bar" 2]))
+                (assert False)))
+
+
+
