@@ -23,7 +23,7 @@
 ;; These macro allows writing destructured pattern matching with variable binding 
 ;;
 ;; ex:
-;;  (if-match [?a ?b 1 "foo"] ["v1" "v2" 1 "bar"]
+;;  (if-match ['?a '?b 1 "foo"] ["v1" "v2" 1 "bar"]
 ;;            true-branch ; variables ?a and ?b are binded to their counterpart values in rhs
 ;;            false-branch)
 
@@ -96,21 +96,13 @@
            (vars-in (cdr expr) varform?))))
 
 
-
-(defmacro quote-vars [expr]
-  "Eval expr by binding variable with their quoted value
-   It has the side effect of evaluating all other forms"
-  `(let ~(mapcar (lambda [v] [v `'~v]) (vars-in expr 
-       (lambda [x] (or (var? x) (keyword? x))))) ~expr))
-         
-
 (defmacro/g! if-match* [pat seq then &optional [else nil]]
   "Compare pat and seq and perform destructured assignement with
    variables begining with ? in pat."
-   ;;        (if-match [[?a ?b] 1 2] [['foo 'bar] 1 2]
+   ;;        (if-match [['?a '?b] 1 2] [['foo 'bar] 1 2]
    ;;              (assert (and (= ?a 'foo) (= ?b 'bar)))
    ;;              (assert False)))
-  (setv if-expr `(if (match? (quote-vars ~pat) ~seq ~g!vars)
+  (setv if-expr `(if (match?  ~pat ~seq ~g!vars)
       (let ~(mapcar (lambda (v) [v `(get ~g!vars '~v)]) (vars-in pat)) ~then)))
   (if (!= else nil) 
       (.append if-expr else))
@@ -130,14 +122,14 @@
                [pat1 branch1]
                [pat2 branch2]
                ...
-               [?_ all-match-branch])
+               ['?_ all-match-branch])
    Equivalent to: 
          (if-match pat1 expr 
              branch1 
              (if-match pat2 expr 
                  branch2
                  ...
-                 (if-match ?_ all-match-branch)...))"
+                 (if-match '?_ all-match-branch)...))"
   (setv branches (iter branches))
   (defun make-branch [branch]
     (setv (, pat thebranch) branch)
