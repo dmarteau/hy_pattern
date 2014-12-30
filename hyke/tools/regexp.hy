@@ -41,12 +41,11 @@
 
 
 (defmacro if-re-search* [rexpr test then-branch &optional (else-branch nil)] 
-  """Test the regular expression and execute the branch according to the 
-     result of the test:
-         (re-search r'^([/d]+)' '1234'
-                (print 'found' #\1)
-                (print 'Not Found')))
-  """
+  "Test the regular expression and execute the branch according to the 
+   result of the test"
+   ;;    (re-search r"^([/d]+)" "1234"
+   ;;           (print "found" #\1)
+   ;;           (print "Not Found")))
   (setv if-expr `(if-not (none? __sre_match__) ~then-branch))
   (if (!= else-branch nil)
     (.append if-expr else-branch))
@@ -65,19 +64,18 @@
 
 
 (defmacro re-cond* [test &rest branches]
-  """Nested re-search 
-           (re-cond test
-                 [regex1 branch1]
-                 [regex2 branch2]
-                 [".*" all-match-branch])
-     is equivalent to: 
-         (re-search regex1 expr 
-             branch1 
-             (re-search regex2 expr 
-                branch2
-                ...
-                (re-search r".*"  all-match-branch)...))
-  """
+  "Nested re-search similare to cond form" 
+  ;;         (re-cond test
+  ;;              [regex1 branch1]
+  ;;               [regex2 branch2]
+  ;;               [".*" all-match-branch])
+  ;;   is equivalent to: 
+  ;;       (re-search regex1 expr 
+  ;;           branch1 
+  ;;           (re-search regex2 expr 
+  ;;              branch2
+  ;;              ...
+  ;;              (re-search r".*"  all-match-branch)...))
   (setv branches (iter branches))
   (defun make-branch [branch]
     (setv (, pat thebranch) branch)
