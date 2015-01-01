@@ -23,27 +23,9 @@
 ;; These macro allows writing destructured pattern matching with variable binding 
 ;;
 ;; ex:
-;;  (if-match ['?a '?b 1 "foo"] ["v1" "v2" 1 "bar"]
+;;  (if-match [?a ?b 1 "foo"] ["v1" "v2" 1 "bar"]
 ;;            true-branch ; variables ?a and ?b are binded to their counterpart values in rhs
 ;;            false-branch)
-
-;; Convert the argument list to a cons list
-(defmacro listq [&rest seq] `(list* ~@seq '()))
-
-
-(defun list# [seq] 
-  "Convert the input sequence to a cons list, 
-   note that input is modified"
-  (.append seq '())
-  (apply list* seq))
-
-
-(defun mapcar [fun x &rest seqs]
-  "Very much like zipwith except it returns a cons list"
-  (list# (list-comp
-    (apply fun y) 
-    (y (apply zip (cons x seqs))))))
-
 
 (import [hy.models.symbol [HySymbol]])
 
@@ -51,89 +33,72 @@
 (defmacro atom? [x] `(if (coll? ~x) (= ~x ()) True))
 
 
-(defun union [&rest args]
-  (import [itertools [chain]])
-  (set-comp x [x (apply chain args)]))  
-
-
 (defun var? [x]
   "Check for variable symbol if it begin with ?"
   (and (symbol? x) (= (get (name x) 0) "?")))
 
 
-(defun keyword? [x]
-  "Check symbol is keyword"
-  (and (symbol? x) (= (get (name x) 0) "&")))
+(defmacro cadr [seq] `(get ~seq 1))
 
 
-(defun match? [expr val &optional [vars {}]]
-  "Compare recursively expr and val term by term.
-   Variables forms will be binded to right hand side values.
-   An optional dictionary can be passed to collect 
-   values associated to binded variables"
-  (if (atom? expr)
-      (if (var? expr)
-          (if (in expr vars) ;; Check if vars is already defined
-              (= (get vars expr) val)
-              (do 
-                (assoc vars expr val)
-                true))
-          (= expr val)) ;; Compare actual values
-      ;; Not an atom, go recursively 
-      (let [[elem (car expr)]]
-        (if (and (symbol? elem) (= elem '&rest))
-            (match? (car (cdr expr)) val vars)
-            (and (match? (car expr) (car val) vars)
-                 (match? (cdr expr) (cdr val) vars))))))
+(defun destruct-match [pat seq &optional [vars nil] [n 0]]
 
+  (if (= vars nil)
+    (setv vars (set)))
 
-(defun vars-in [expr &optional [varform? var?]]
-  "Returns all the pattern variables in an expression
-   It calls var? to test if something is a variable."
-  (if (atom? expr)
-    (if (varform? expr) [expr] [])
-    (union (vars-in (car expr) varform?)
-           (vars-in (cdr expr) varform?))))
+  (defun bind-var [elem place] 
+    (if (and (var? elem) (not (in elem vars)))
+      (do 
+        (.add vars elem) 
+        `[~elem ~place])
+      `[~(gensym) (if-not (= ~elem ~place) (raise (IndexError "No match")))]))
+  
+  (if (= () pat)
+    ()
+    (let [[elem (cond [(atom? pat) pat]
+                      [(= (car pat) '&rest) (cadr pat)]
+                      [true None])]]
+      (if-not (nil? elem)
+         `[~(bind-var elem `(slice ~seq ~n))]
+         (do
+           (setv (, p rec) [(car pat) (lambda [] (destruct-match (cdr pat) seq vars (inc n)))])
+           (if (atom? p)
+             (+ [`~(bind-var p `(get ~seq ~n))] (rec))
+             (let [[var (gensym)]]
+               (+ (+ `[[~var (get ~seq ~n)]]
+                   (destruct-match p var vars)) (rec)))))))))
+                               
 
-
-(defmacro/g! if-match* [pat seq then &optional [else nil]]
+(defmacro/g! if-match [pat seq then &optional [else nil]]
   "Compare pat and seq and perform destructured assignement with
    variables begining with ? in pat."
-   ;;        (if-match [['?a '?b] 1 2] [['foo 'bar] 1 2]
+   ;;        (if-match [[?a ?b] 1 2] [['foo 'bar] 1 2]
    ;;              (assert (and (= ?a 'foo) (= ?b 'bar)))
    ;;              (assert False)))
-  (setv if-expr `(if (match?  ~pat ~seq ~g!vars)
-      (let ~(mapcar (lambda (v) [v `(get ~g!vars '~v)]) (vars-in pat)) ~then)))
-  (if (!= else nil) 
-      (.append if-expr else))
-
-  `(let [[~g!vars {}]] ~if-expr))
+   `(let [[~g!seq ~seq]]
+     (try
+       (let  ~(destruct-match pat g!seq) ~then)
+       (catch [IndexError] ~(if (= else nil) `nil else)))))
 
 
-(defmacro if-match [&rest args]
-  `(do 
-     (import [hyke.tools.patterns [match?]])
-     (if-match* ~@args)))
-
-
-(defmacro match-cond* [expr &rest branches]
+(defmacro match-cond [expr &rest branches]
   "cond with pattern matching
          (match-cond expr 
                [pat1 branch1]
                [pat2 branch2]
                ...
-               ['?_ all-match-branch])
+               [?_ all-match-branch])
    Equivalent to: 
          (if-match pat1 expr 
              branch1 
              (if-match pat2 expr 
                  branch2
                  ...
-                 (if-match '?_ all-match-branch)...))"
+                 (if-match ?_ all-match-branch)...))"
   (setv branches (iter branches))
   (defun make-branch [branch]
     (setv (, pat thebranch) branch)
-    `(if-match* ~pat expr ~thebranch))
+    `(if-match ~pat expr ~thebranch))
 
   (setv root (make-branch (next branches)))
   (setv last-branch root)
@@ -144,9 +109,4 @@
  
   `(let [[expr ~expr]] ~root))
 
-
-(defmacro match-cond [&rest args]
-  `(do 
-     (import [hyke.tools.patterns [match?]])
-     (match-cond* ~@args)))
 
