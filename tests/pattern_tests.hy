@@ -56,7 +56,7 @@
       (match-cond ['bar 1] 
                   [[?a 0] (assert False)] 
                   [[?a 1] (assert (= ?a 'bar))] 
-                  ['?_ (assert False)]))
+                  [?_ (assert False)]))
 
 
 (defn test-match-cond-catch-all []

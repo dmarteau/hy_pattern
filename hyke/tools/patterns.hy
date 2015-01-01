@@ -51,7 +51,7 @@
       (do 
         (.add vars elem) 
         `[~elem ~place])
-      `[~(gensym) (if-not (= ~elem ~place) (raise (IndexError "No match")))]))
+      `[~(gensym) (if (!= ~elem ~place) (raise (IndexError "No match")))]))
   
   (if (= () pat)
     ()
