@@ -27,10 +27,8 @@
 ;;            true-branch ; variables ?a and ?b are binded to their counterpart values in rhs
 ;;            false-branch)
 
-(import [hy.models.symbol [HySymbol]])
-
-(defmacro symbol? [x] `(isinstance ~x HySymbol))
-(defmacro atom? [x] `(if (coll? ~x) (= ~x ()) True))
+(import [hyke.tools.clisp [*]]
+        [hy [HyInteger]])
 
 
 (defun var? [x]
@@ -38,13 +36,12 @@
   (and (symbol? x) (= (get (name x) 0) "?")))
 
 
-(defmacro cadr [seq] `(get ~seq 1))
+(defun wrap-int [x] (HyInteger x)) ; Fix https://github.com/hylang/hy/issues/707
 
 
-(defun destruct-match [pat seq &optional [vars nil] [n 0]]
-
-  (if (= vars nil)
-    (setv vars (set)))
+(defun destruct-match [pat seq vars &optional [n 0]]
+  ;; Create a 'let' expression by destructuring 'pat' and binding
+  ;; variable to their equivalent place in the input sequence 'seq' 
 
   (defun bind-var [elem place] 
     (if (and (var? elem) (not (in elem vars)))
@@ -59,13 +56,13 @@
                       [(= (car pat) '&rest) (cadr pat)]
                       [true None])]]
       (if-not (nil? elem)
-         `[~(bind-var elem `(slice ~seq ~n))]
+         `[~(bind-var elem `(slice ~seq ~(wrap-int n)))]
          (do
            (setv (, p rec) [(car pat) (lambda [] (destruct-match (cdr pat) seq vars (inc n)))])
            (if (atom? p)
-             (+ [`~(bind-var p `(get ~seq ~n))] (rec))
+             (nconc [`~(bind-var p `(get ~seq ~(wrap-int n)))] (rec))
              (let [[var (gensym)]]
-               (+ (+ `[[~var (get ~seq ~n)]]
+               (nconc (nconc `[[~var (get ~seq ~(wrap-int n))]]
                    (destruct-match p var vars)) (rec)))))))))
                                
 
@@ -77,7 +74,7 @@
    ;;              (assert False)))
    `(let [[~g!seq ~seq]]
      (try
-       (let  ~(destruct-match pat g!seq) ~then)
+       (let  ~(destruct-match pat g!seq (set)) ~then)
        (catch [IndexError] ~(if (= else nil) `nil else)))))
 
 

@@ -1,0 +1,78 @@
+;;; Forward chaining rules macros
+;;
+;; Copyright (c) 2014  David Marteau <dhmarteau@gmail.com>
+;;
+;; Permission is hereby granted, free of charge, to any person obtaining a
+;; copy of this software and associated documentation files (the "Software"),
+;; to deal in the Software without restriction, including without limitation
+;; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;; and/or sell copies of the Software, and to permit persons to whom the
+;; Software is furnished to do so, subject to the following conditions:
+;;
+;; The above copyright notice and this permission notice shall be included in
+;; all copies or substantial portions of the Software.
+;;
+;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+;; THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;; DEALINGS IN THE SOFTWARE.
+;;
+
+;; Plan:
+;;
+;;   (defrule rulename
+;;        [(rule:notany pattern1)]
+;;          pattern2
+;;          ....        
+;;          patternN]    
+;;       then)
+;;
+
+(import [hyke.tools.patterns [destruct-match]])
+
+
+(defun foreach-premise [ pat vars body &optional [notany false] ] 
+  (setv expr `(for [fact (get-facts n)]
+     (try 
+       (let ~(destruct-match pat fact vars)
+         ~(if notany `(break) ~body))
+       (catch [IndexError]))))
+
+  (if notany
+    (.append expr `(else ~body)))) 
+
+
+ defun expand-premise [patternS n]
+    (setv pat (car patterns))
+    (setv destruct `(let ~(destruct-match pat f vars)))
+
+    (if (= (car pat) 'rule:notany)
+      (.append destruct (expand-premise (cdr patterns) vars (inc n)))
+      (.append destruct `break)
+
+   `(for [f (get-facts n)]
+         (try 
+           (let ~(destruct-match pat f vars)
+             ~(expand-premise (cdr patterns) vars (inc n))) 
+             (catch [IndexError]))))
+
+
+(defun expand-premise-notany [patterns vars n]
+    (setv pat (car patterns))
+    `(for [f (get-facts n)]
+          (try
+            (let ~(destruct-match pat f vars) 
+              (break))
+            (catch [IndexError]))
+       (else ~(expand-premise (cdr patterns) vars (inc n)))))
+
+  
+
+
+
+(defmacro defrule [rulename premises conclusion] 
+  )
+
