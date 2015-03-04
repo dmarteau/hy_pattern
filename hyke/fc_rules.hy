@@ -20,7 +20,6 @@
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
 ;;
-i
 ;; Plan:
 ;;
 ;;   (defrule rulename
@@ -31,70 +30,80 @@ i
 ;;       conclusion)
 ;;
 
-(import [hyke.tools.patterns [destruct-match]])
+(require hyke.tools.patterns)
 
-
-(defun pattern-premise-notany-1 [statement pat premises conclusion vars n [&optional [when-clause nil]]]
-  `(for [fact statement]
-     (try
-       (setv vars-1 (set vars))
-       (let ~(destruct-match pat fact vars-1)
+(defun pattern-premise-notany-1 [statement pat premises conclusion getfacts &optional [when-clause nil]]
+   "Generate code for handling notany premises"
+   ; Notany premise check all facts in statement for falseness
+   ; all bindings that occurs during evaluation are undone
+  `(for [fact ~statement]
+       (if-match ~pat fact
          ~(if (!= nil when-clause) 
             `(if ~when-clause (break))
             `(break)))
-       (catch IndexError]))
-     (else ~(foreach-premise premises conclusion n))))
+     (else ~(foreach-premise premises conclusion getfacts))))
 
 
-(defun pattern-premise-1 [statement pat premises conclusion vars n [&optional [when-clause nil]]]
-  `(for [fact statement]
-     (try
-       (let ~(destruct-match pat fact vars)
+(defun pattern-premise-1 [statement pat premises conclusion getfacts &optional [when-clause nil]]
+  "Generate code for matching premise"
+  ; loop over all facts and if fact match, handle next premise
+  `(for [fact ~statement]
+       (if-match ~pat fact
          ~(if (!= nil when-clause)
-            `(if ~when-clause ~(foreach-premise premises conclusion n))
-            ~(foreach-premise premises conclusion n)))
-       (catch IndexError]))))
+            `(if ~when-clause ~(foreach-premise premises conclusion getfacts))
+             (foreach-premise premises conclusion getfacts)))))
 
 
-(defun statement-premise [statement premises conclusion vars n]
-  (do
+(defun statement-premise [statement premises conclusion getfacts]
+  ; Execute statement (which is always true)
+  `(do
     ~@statement ; statement is always true
-    (foreach-premise (premises conclusion vars n))))
+    ~(foreach-premise (premises conclusion getfacts))))
 
 
-(defun match-pattern-premise [fun pat rec next-premises conclusion vars n]
-   (match-cond rec
-     [[()]  (fun `(get-facts ~n) ?pat next-premises conclusion vars (inc n))]
-     [[':when ?clause] (fun `(get-facts ~n) ?pat next-premises conclusion vars (inc n) ?clause)]
-     [[':in ?statement] (fun ?statement ?pat next-premises conclusion vars n)]
-     [[':in ?statement ':when ?clause] (fun ?statement ?pat next-premises conclusion vars n ?clause)]
-     [[?_] 
-        (macro-error rec "Matching premise arguments must be [:in statement] [:when clause]]")]))
+(defun forall-premise [nested next-premises conclusion getfacts &optional [require-clause nil]] 
+  "Backtrack all nested premises in the forall premise"
+  (setv clause-expr (if (!= nil require-clause) `(if ~require-clause) `()))
+  (.apppend clause-expr (foreach premise next-premises conclusion getfacts))
+  `~(foreach-premise nested clause-expr getfacts))
 
 
-(defun forall-premise [])
+(defun match-pattern-premise [fun pat rec next-premises conclusion getfacts]
+  (print "xxxx" rec)
+  (match-cond rec
+     [[]  (fun `(~getfacts pat) pat next-premises conclusion getfacts)]
+     [[':when ?clause] (fun (getfacts pat) pat next-premises conclusion getfacts ?clause)]
+     [[':in ?statement] (fun ?statement pat next-premises conclusion getfacts)]
+     [[':in ?statement ':when ?clause] (fun ?statement pat next-premises conclusion getfacts ?clause)]
+     [?_
+        (macro-error rec "Matching premise arguments must be [:in statement] [:when clause]")]))
    
 
-(defun foreach-premise [premises conclusion vars n ]
-   (if (= () patterns) ; end of cycle, all premises are verified
-     conclusion
-     (do 
-       (setv (, premise next-premises) [(car premises) (cdr premises))
-       (match-cond (car premise) 
-         [[':match ?pat &rest ?rest]  
-          (match-pattern-premise pattern-premise-1 ?pat ?rest next-premises conclusion vars n)]
-         [[':notany ?pat &rest ?rest] 
-          (match-pattern-premise pattern-premise-notany-1 ?pat ?rest next-premises conclusion vars n)]
-         [[':do &rest ?statement] 
-          (statement-premise ?statement next-premises conclusion vars n)]
-         [[':forall ?nested]
-          (forall-premise ?nested next-premises conclusion vars n)
-         [[?_]
-          (macro-error rec "Matching premise arguments must be [:match|:notany|:do|:forall]")]))))
+(defun foreach-premise [premises conclusion getfacts] 
+  (if (= () premises) ; end of cycle, all premises are verified
+    conclusion
+    (do 
+      (setv (, premise next-premises) [(car premises) (cdr premises)])
+      (setv (, r rec) [(car premise) (cdr premise)])
+      (cond [(= r ':match)
+             (match-pattern-premise pattern-premise-1 (car rec) (cdr rec) next-premises conclusion getfacts)]
+            [(= r ':notany) 
+             (match-pattern-premise pattern-premise-notany-1 (car rec) (cdr rec) next-premises conclusion getfacts)]
+            [(= r ':do)
+             (statement-premise rec next-premises conclusion getfacts)]
+            [(= r ':forall)
+             (forall-premise rec next-premises conclusion vars getfacts)]
+            [true 
+             (macro-error rec "Matching premise arguments must be [:match|:notany|:do|:forall]")]))))
+               
 
-    
+
+(defmacro genrule [premises conclusion getfacts] 
+  (foreach-premise premises conclusion getfacts))
 
 
-(defmacro defrule [rulename premises conclusion]
-  )
+;; (defmacro defrule [rulename premises conclusion]
+;;  "Define a rule object"
+;;  
+;; )
 

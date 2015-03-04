@@ -42,7 +42,6 @@
 (defun destruct-match [pat seq vars &optional [n 0]]
   ;; Create a 'let' expression by destructuring 'pat' and binding
   ;; variable to their equivalent place in the input sequence 'seq' 
-
   (defun bind-var [elem place] 
     (if (and (var? elem) (not (in elem vars)))
       (do 

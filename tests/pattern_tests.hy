@@ -74,4 +74,16 @@
                 (assert False)))
 
 
+(defn test-match-empty []
+      "Test match empty pattern"
+      (if-match () []
+                (assert True)
+                (assert False)))
+
+
+(defn test-match-cond-empty []
+      "Test match-cond with empty pattern"
+      (match-cond () 
+                  [[] (assert True)] 
+                  [?_ (assert False)]))
 
