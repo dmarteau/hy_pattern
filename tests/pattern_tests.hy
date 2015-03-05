@@ -87,3 +87,10 @@
                   [[] (assert True)] 
                   [?_ (assert False)]))
 
+
+(defn test-match-catch-all []
+      "Test catch all"
+       (if-match [?a ?_ ?_] ["foo" 1 45 ]
+                  (assert (= ?a "foo"))
+                  (assert False)))
+ 

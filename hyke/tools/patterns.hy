@@ -24,7 +24,7 @@
 ;;
 ;; ex:
 ;;  (if-match [?a ?b 1 "foo"] ["v1" "v2" 1 "bar"]
-;;            true-branch ; variables ?a and ?b are binded to their counterpart values in rhs
+;;            true-branch ; variables a and b are binded to their counterpart values in rhs
 ;;            false-branch)
 
 (import [hyke.tools.clisp [*]]
@@ -42,10 +42,11 @@
 (defun destruct-match [pat seq vars &optional [n 0]]
   ;; Create a 'let' expression by destructuring 'pat' and binding
   ;; variable to their equivalent place in the input sequence 'seq' 
-  (defun bind-var [elem place] 
+  ;; Bindings are done with the postfixed value of the declared variable (i,e ?foo binds foo)
+  (defun bind-var [elem place]
     (if (and (var? elem) (not (in elem vars)))
-      (do 
-        (.add vars elem) 
+      (do
+        (.add vars elem)
         `[~elem ~place])
       `[~(gensym) (if (!= ~elem ~place) (raise (IndexError "No match")))]))
   
@@ -54,12 +55,12 @@
     (let [[elem (cond [(atom? pat) pat]
                       [(= (car pat) '&rest) (cadr pat)]
                       [true None])]]
-      (if-not (nil? elem)
-         `[~(bind-var elem `(slice ~seq ~(wrap-int n)))]
+      (if-not (nil? elem) 
+         (if (= elem "?_") `[] `[~(bind-var elem `(slice ~seq ~(wrap-int n)))])
          (do
            (setv (, p rec) [(car pat) (lambda [] (destruct-match (cdr pat) seq vars (inc n)))])
            (if (atom? p)
-             (nconc [`~(bind-var p `(get ~seq ~(wrap-int n)))] (rec))
+             (if (= p "?_") (rec) (nconc [`~(bind-var p `(get ~seq ~(wrap-int n)))] (rec)))
              (let [[var (gensym)]]
                (nconc (nconc `[[~var (get ~seq ~(wrap-int n))]]
                    (destruct-match p var vars)) (rec)))))))))
