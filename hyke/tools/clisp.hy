@@ -21,8 +21,6 @@
 ;; DEALINGS IN THE SOFTWARE.
 (import [hy.models.symbol [HySymbol]])
 
-(defun symbol? [x] 
-  (isinstance x HySymbol))
 
 (defun atom? [x] 
   (if (coll? x) (= x ()) True))
