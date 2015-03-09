@@ -28,12 +28,19 @@
 ;;            false-branch)
 
 (import [hyke.tools.clisp [*]]
-        [hy [HyInteger]])
+        [hy [HyInteger]]
+        [hy.models.symbol [HySymbol]])
 
 
 (defun var? [x]
   "Check for variable symbol if it begin with ?"
   (and (symbol? x) (= (get (name x) 0) "?")))
+
+
+(defun var-to-symbol [v]
+  (if (= (get (name v) 0) "?") 
+    (HySymbol (slice v 1))
+    v))
 
 
 (defun wrap-int [x] (HyInteger x)) ; Fix https://github.com/hylang/hy/issues/707
@@ -47,8 +54,8 @@
     (if (and (var? elem) (not (in elem vars)))
       (do
         (.add vars elem)
-        `[~elem ~place])
-      `[~(gensym) (if (!= ~elem ~place) (raise (IndexError "No match")))]))
+        `[~(var-to-symbol elem) ~place])
+      `[~(gensym) (if (!= ~(var-to-symbol elem) ~place) (raise (IndexError "No match")))]))
   
   (if (= () pat)
     ()
