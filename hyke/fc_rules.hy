@@ -69,7 +69,6 @@
 
 
 (defun match-pattern-premise [fun pat rec next-premises conclusion getfacts]
-  (print "xxxx" rec)
   (match-cond rec
      [[]  (fun `(~getfacts pat) pat next-premises conclusion getfacts)]
      [[':when ?clause] (fun (getfacts pat) pat next-premises conclusion getfacts ?clause)]
